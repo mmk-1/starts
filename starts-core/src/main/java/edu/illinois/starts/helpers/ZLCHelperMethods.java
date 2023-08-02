@@ -100,6 +100,7 @@ public class ZLCHelperMethods implements StartsConstants {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
+                break;
             }
 
             String extForm = url.toExternalForm();
@@ -195,6 +196,7 @@ public class ZLCHelperMethods implements StartsConstants {
                         LOGGER.log(Level.FINEST, "Ignoring: " + url);
                         continue;
                     }
+                    break;
                 }
             }
         } catch (IOException ioe) {
