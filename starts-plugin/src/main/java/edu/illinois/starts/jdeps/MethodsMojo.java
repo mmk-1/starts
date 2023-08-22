@@ -7,9 +7,7 @@ package edu.illinois.starts.jdeps;
 import java.util.*;
 import java.util.logging.Level;
 
-import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelperMethods;
-import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.smethods.MethodLevelStaticDepsBuilder;
 import edu.illinois.starts.util.ChecksumUtil;
 import edu.illinois.starts.util.Logger;

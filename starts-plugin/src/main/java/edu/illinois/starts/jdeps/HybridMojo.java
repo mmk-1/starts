@@ -23,20 +23,16 @@ import org.apache.maven.surefire.booter.Classpath;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 
-
-
 @Mojo(name = "hybrid", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class HybridMojo extends DiffMojo {
 
-    private Logger logger;
-    private Set<String> changedMethods;
-    private Set<String> affectedTestClasses;
-    private Set<String> nonAffectedTestClasses;
-    private Set<String> changedClasses;
-    private Map<String, String> methodsCheckSums;
-    private Map<String, String> classesChecksums;
-    private Map<String, Set<String>> method2testClasses;
+    @Parameter(property = "computeImpactedMethods", defaultValue = TRUE)
+    private boolean computeImpactedMethods;
+
+    public void setComputeImpactedMethods(boolean computeImpactedMethods) {
+        this.computeImpactedMethods = computeImpactedMethods;
+    }
 
     @Parameter(property = "updateMethodsChecksums", defaultValue = TRUE)
     private boolean updateMethodsChecksums;
@@ -45,22 +41,35 @@ public class HybridMojo extends DiffMojo {
         this.updateMethodsChecksums = updateChecksums;
     }
 
+    private Logger logger;
+    private Set<String> changedMethods;
+    private Set<String> newMethods;
+    private Set<String> impactedMethods;
+    private Set<String> newClasses;
+    private Set<String> oldClasses;
+    private Set<String> changedClasses;
+    private Set<String> impactedTestClasses;
+    private Set<String> affectedTestClasses;
+    private Set<String> nonAffectedTestClasses;
+    private Map<String, String> methodsCheckSum;
+    private Map<String, String> classesChecksum;
+    private Map<String, Set<String>> method2testClasses;
+    private ClassLoader loader;
+
     public void execute() throws MojoExecutionException {
         Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
         logger = Logger.getGlobal();
-        setIncludesExcludes();
         Classpath sfClassPath = getSureFireClassPath();
-        ClassLoader loader = createClassLoader(sfClassPath);
+        loader = createClassLoader(sfClassPath);
 
         // Build method level static dependencies
         try {
             MethodLevelStaticDepsBuilder.buildMethodsGraph();
+            method2testClasses = MethodLevelStaticDepsBuilder.computeMethod2testClasses();
+            classesChecksum = MethodLevelStaticDepsBuilder.computeClassesChecksums(loader, cleanBytes);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        method2testClasses = MethodLevelStaticDepsBuilder.method2testClasses;
-        MethodLevelStaticDepsBuilder.computeClassesChecksums(loader, cleanBytes);
-        classesChecksums = MethodLevelStaticDepsBuilder.classesChecksums;
 
         runMethods(loader);
     }
@@ -68,9 +77,10 @@ public class HybridMojo extends DiffMojo {
     protected void runMethods(ClassLoader loader) throws MojoExecutionException {
         // Checking if the file of depedencies exists
 
-        if (!Files.exists(Paths.get(getArtifactsDir() + METHODS_TEST_DEPS_ZLC_FILE)) && !Files.exists(Paths.get(getArtifactsDir() + CLASSES_ZLC_FILE))) {
+        if (!Files.exists(Paths.get(getArtifactsDir() + METHODS_TEST_DEPS_ZLC_FILE))
+                && !Files.exists(Paths.get(getArtifactsDir() + CLASSES_ZLC_FILE))) {
             MethodLevelStaticDepsBuilder.computeMethodsChecksum(loader);
-            methodsCheckSums = MethodLevelStaticDepsBuilder.getMethodsCheckSum();
+            methodsCheckSum = MethodLevelStaticDepsBuilder.getMethodsCheckSum();
             changedMethods = MethodLevelStaticDepsBuilder.getMethods();
             affectedTestClasses = MethodLevelStaticDepsBuilder.getTests();
             changedClasses = MethodLevelStaticDepsBuilder.getClasses();
@@ -78,7 +88,8 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "ChangedMethods: " + changedMethods.size());
             logger.log(Level.INFO, "ChangedClasses: " + changedClasses.size());
             logger.log(Level.INFO, "AffectedTestClasses: " + affectedTestClasses.size());
-            ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSums,classesChecksums, loader, getArtifactsDir(), null, false,
+            ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                    getArtifactsDir(), null, false,
                     zlcFormat);
             dynamicallyUpdateExcludes(new ArrayList<String>());
 
@@ -87,7 +98,8 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "ChangedMethods: " + changedMethods.size());
             logger.log(Level.INFO, "ChangedClasses: " + changedClasses.size());
             logger.log(Level.INFO, "AffectedTestClasses: " + affectedTestClasses.size());
-            ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSums,classesChecksums, loader, getArtifactsDir(), null, false,
+            ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                    getArtifactsDir(), null, false,
                     zlcFormat);
             List<String> excludePaths = Writer.fqnsToExcludePath(nonAffectedTestClasses);
             dynamicallyUpdateExcludes(excludePaths);
@@ -95,8 +107,9 @@ public class HybridMojo extends DiffMojo {
     }
 
     protected void setChangedAndNonaffectedMethods(ClassLoader loader) throws MojoExecutionException {
-        List<Set<String>> data = ZLCHelperMethods.getChangedDataH(loader ,getArtifactsDir(), cleanBytes,classesChecksums, METHODS_TEST_DEPS_ZLC_FILE, CLASSES_ZLC_FILE);
-        methodsCheckSums = MethodLevelStaticDepsBuilder.getMethodsCheckSum();
+        List<Set<String>> data = ZLCHelperMethods.getChangedDataH(loader, getArtifactsDir(), cleanBytes,
+                classesChecksum, METHODS_TEST_DEPS_ZLC_FILE, CLASSES_ZLC_FILE);
+        methodsCheckSum = MethodLevelStaticDepsBuilder.getMethodsCheckSum();
         changedClasses = data == null ? new HashSet<String>() : data.get(0);
         changedMethods = data == null ? new HashSet<String>() : data.get(1);
         affectedTestClasses = data == null ? new HashSet<String>() : data.get(2);

@@ -135,7 +135,7 @@ public class MethodLevelStaticDepsBuilder {
         return classes;
     }
 
-    public static void computeClassesChecksums(ClassLoader loader, boolean cleanBytes) {
+    public static Map<String, String> computeClassesChecksums(ClassLoader loader, boolean cleanBytes) {
         for (String className : class2ContainedMethodNames.keySet()) {
             String klas = ChecksumUtil.toClassName(className);
             URL url = loader.getResource(klas);
@@ -143,6 +143,7 @@ public class MethodLevelStaticDepsBuilder {
             String checkSum = checksumUtil.computeSingleCheckSum(url);
             classesChecksums.put(className, checkSum);
         }
+        return classesChecksums;
     }
 
     public static  Map<String, String> computeMethodsChecksum(ClassLoader loader) {
