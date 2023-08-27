@@ -101,7 +101,7 @@ public class HybridImpactedMojo extends HybridMojo {
     }
 
     protected void setChangedAndNonaffectedMethods(ClassLoader loader) throws MojoExecutionException {
-        List<Set<String>> data = ZLCHelperMethods.getChangedDataH(loader ,getArtifactsDir(), cleanBytes,classesChecksums, METHODS_TEST_DEPS_ZLC_FILE, CLASSES_ZLC_FILE);
+        List<Set<String>> data = ZLCHelperMethods.getChangedDataHybrid(loader ,getArtifactsDir(), cleanBytes,classesChecksums, METHODS_TEST_DEPS_ZLC_FILE, CLASSES_ZLC_FILE);
         methodsCheckSums = MethodLevelStaticDepsBuilder.getMethodsCheckSum();
         changedClasses = data == null ? new HashSet<String>() : data.get(0);
         changedMethods = data == null ? new HashSet<String>() : data.get(1);

@@ -51,7 +51,8 @@ public class MethodLevelStaticDepsBuilder {
     public static Map<String, String> classesChecksums = new HashMap<>();
 
     public static void buildMethodsGraph() throws Exception {
-        // find all the class files
+
+        // find all the classes' files
         HashSet<String> classPaths = new HashSet<>(Files.walk(Paths.get("."))
                 .filter(Files::isRegularFile)
                 .filter(f -> (f.toString().endsWith(".class") && f.toString().contains("target")))
@@ -61,6 +62,8 @@ public class MethodLevelStaticDepsBuilder {
         // Finding class2ContainedMethodNames, methodName2MethodNames,
         // hierarchy_parents, hierarchy_children
         findMethodsinvoked(classPaths);
+
+
 
         // Suppose that test classes have Test in their class name
         Set<String> testClasses = new HashSet<>();
@@ -82,8 +85,49 @@ public class MethodLevelStaticDepsBuilder {
         addVariableDepsToDependencyGraph();
     }
 
+    public static void findMethodsinvoked(Set<String> classPaths) {
+        // Finding class2ContainedMethodNames, hierarchy_parents, hierarchy_children,
+        for (String classPath : classPaths) {
+            try {
+                ClassReader classReader = new ClassReader(new FileInputStream(new File(classPath)));
+                ClassToMethodsCollectorCV classToMethodsVisitor = new ClassToMethodsCollectorCV(
+                        class2ContainedMethodNames, hierarchy_parents, hierarchy_children);
+                classReader.accept(classToMethodsVisitor, ClassReader.SKIP_DEBUG);
+            } catch (IOException e) {
+                System.out.println("Cannot parse file: " + classPath);
+                continue;
+            }
+        }
 
-    public static Map<String, String> getMethodsCheckSum(){
+        // Finding methodName2MethodNames map
+        for (String classPath : classPaths) {
+            try {
+                ClassReader classReader = new ClassReader(new FileInputStream(new File(classPath)));
+                MethodCallCollectorCV methodClassVisitor = new MethodCallCollectorCV(methodName2MethodNames,
+                        hierarchy_parents, hierarchy_children, class2ContainedMethodNames);
+                classReader.accept(methodClassVisitor, ClassReader.SKIP_DEBUG);
+            } catch (IOException e) {
+                System.out.println("Cannot parse file: " + classPath);
+                continue;
+            }
+        }
+
+        // deal with test class in a special way, all the @test method in hierarchy
+        // should be considered
+        for (String superClass : hierarchy_children.keySet()) {
+            if (superClass.contains("Test")) {
+                for (String subClass : hierarchy_children.getOrDefault(superClass, new HashSet<>())) {
+                    for (String methodSig : class2ContainedMethodNames.getOrDefault(superClass, new HashSet<>())) {
+                        String subClassKey = subClass + "#" + methodSig;
+                        String superClassKey = superClass + "#" + methodSig;
+                        methodName2MethodNames.computeIfAbsent(subClassKey, k -> new TreeSet<>()).add(superClassKey);
+                    }
+                }
+            }
+        }
+    }
+
+    public static Map<String, String> getMethodsCheckSum() {
         return methodsCheckSum;
     }
 
@@ -146,7 +190,7 @@ public class MethodLevelStaticDepsBuilder {
         return classesChecksums;
     }
 
-    public static  Map<String, String> computeMethodsChecksum(ClassLoader loader) {
+    public static Map<String, String> computeMethodsChecksum(ClassLoader loader) {
         for (String class_name : class2ContainedMethodNames.keySet()) {
             String klas = ChecksumUtil.toClassName(class_name);
             URL url = loader.getResource(klas);
@@ -218,48 +262,6 @@ public class MethodLevelStaticDepsBuilder {
         }
     }
 
-    public static void findMethodsinvoked(Set<String> classPaths) {
-        // Finding class2ContainedMethodNames, hierarchy_parents, hierarchy_children,
-        for (String classPath : classPaths) {
-            try {
-                ClassReader classReader = new ClassReader(new FileInputStream(new File(classPath)));
-                ClassToMethodsCollectorCV classToMethodsVisitor = new ClassToMethodsCollectorCV(
-                        class2ContainedMethodNames, hierarchy_parents, hierarchy_children);
-                classReader.accept(classToMethodsVisitor, ClassReader.SKIP_DEBUG);
-            } catch (IOException e) {
-                System.out.println("Cannot parse file: " + classPath);
-                continue;
-            }
-        }
-
-        // Finding methodName2MethodNames map
-        for (String classPath : classPaths) {
-            try {
-                ClassReader classReader = new ClassReader(new FileInputStream(new File(classPath)));
-                MethodCallCollectorCV methodClassVisitor = new MethodCallCollectorCV(methodName2MethodNames,
-                        hierarchy_parents, hierarchy_children, class2ContainedMethodNames);
-                classReader.accept(methodClassVisitor, ClassReader.SKIP_DEBUG);
-            } catch (IOException e) {
-                System.out.println("Cannot parse file: " + classPath);
-                continue;
-            }
-        }
-
-        // deal with test class in a special way, all the @test method in hierarchy
-        // should be considered
-        for (String superClass : hierarchy_children.keySet()) {
-            if (superClass.contains("Test")) {
-                for (String subClass : hierarchy_children.getOrDefault(superClass, new HashSet<>())) {
-                    for (String methodSig : class2ContainedMethodNames.getOrDefault(superClass, new HashSet<>())) {
-                        String subClassKey = subClass + "#" + methodSig;
-                        String superClassKey = superClass + "#" + methodSig;
-                        methodName2MethodNames.computeIfAbsent(subClassKey, k -> new TreeSet<>()).add(superClassKey);
-                    }
-                }
-            }
-        }
-    }
-
     public static Set<String> getDepsHelper(String testClass) {
         Set<String> visitedMethods = new TreeSet<>();
         // BFS
@@ -288,7 +290,7 @@ public class MethodLevelStaticDepsBuilder {
     // simple DFS
     public static void getDepsDFS(String methodName, Set<String> visitedMethods) {
         if (methodDependencyGraph.containsKey(methodName)) {
-            for (String method : methodDependencyGraph.get(methodName)) {
+            for (String method : methodName2MethodNames.get(methodName)) {
                 if (!visitedMethods.contains(method)) {
                     visitedMethods.add(method);
                     getDepsDFS(method, visitedMethods);
@@ -321,7 +323,7 @@ public class MethodLevelStaticDepsBuilder {
 
     public static Set<String> getDeps(String testClass) {
         Set<String> visited = new HashSet<>();
-        for (String method : methodDependencyGraph.keySet()) {
+        for (String method : methodName2MethodNames.keySet()) {
             if (method.startsWith(testClass + "#")) {
                 visited.add(method);
                 getDepsDFS(method, visited);
@@ -372,7 +374,6 @@ public class MethodLevelStaticDepsBuilder {
         }
         return res;
     }
-
 
     public static Map<String, Set<String>> invertMap(Map<String, Set<String>> mapToInvert) {
         Map<String, Set<String>> map = mapToInvert;
