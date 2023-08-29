@@ -4,12 +4,16 @@
 
 package edu.illinois.starts.jdeps;
 
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
-import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelperMethods;
-import edu.illinois.starts.maven.AgentLoader;
 import edu.illinois.starts.smethods.MethodLevelStaticDepsBuilder;
 import edu.illinois.starts.util.Logger;
 
@@ -20,26 +24,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.surefire.booter.Classpath;
-import java.nio.file.Paths;
-import java.nio.file.Files;
 
 @Mojo(name = "hybrid", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class HybridMojo extends DiffMojo {
-
-    @Parameter(property = "computeImpactedMethods", defaultValue = TRUE)
-    private boolean computeImpactedMethods;
-
-    public void setComputeImpactedMethods(boolean computeImpactedMethods) {
-        this.computeImpactedMethods = computeImpactedMethods;
-    }
-
-    @Parameter(property = "updateMethodsChecksums", defaultValue = TRUE)
-    private boolean updateMethodsChecksums;
-
-    public void setUpdateMethodsChecksums(boolean updateChecksums) {
-        this.updateMethodsChecksums = updateChecksums;
-    }
 
     private Logger logger;
     private Set<String> changedMethods;
@@ -55,6 +43,20 @@ public class HybridMojo extends DiffMojo {
     private Map<String, Set<String>> method2testClasses;
     private ClassLoader loader;
 
+    @Parameter(property = "computeImpactedMethods", defaultValue = TRUE)
+    private boolean computeImpactedMethods;
+
+    @Parameter(property = "updateMethodsChecksums", defaultValue = TRUE)
+    private boolean updateMethodsChecksums;
+
+    public void setComputeImpactedMethods(boolean computeImpactedMethods) {
+        this.computeImpactedMethods = computeImpactedMethods;
+    }
+
+    public void setUpdateMethodsChecksums(boolean updateChecksums) {
+        this.updateMethodsChecksums = updateChecksums;
+    }
+
     public void execute() throws MojoExecutionException {
         Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
         logger = Logger.getGlobal();
@@ -66,8 +68,8 @@ public class HybridMojo extends DiffMojo {
             MethodLevelStaticDepsBuilder.buildMethodsGraph();
             method2testClasses = MethodLevelStaticDepsBuilder.computeMethod2testClasses();
             classesChecksum = MethodLevelStaticDepsBuilder.computeClassesChecksums(loader, cleanBytes);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
         }
 
         if (computeImpactedMethods) {

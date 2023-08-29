@@ -4,7 +4,15 @@
 
 package edu.illinois.starts.jdeps;
 
-import java.util.*;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 
 import edu.illinois.starts.helpers.ZLCHelperMethods;
@@ -19,31 +27,10 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.surefire.booter.Classpath;
-import java.nio.file.Paths;
-import java.net.URL;
-import java.nio.file.Files;
 
 @Mojo(name = "methods", requiresDirectInvocation = true, requiresDependencyResolution = ResolutionScope.TEST)
 @Execute(phase = LifecyclePhase.TEST_COMPILE)
 public class MethodsMojo extends DiffMojo {
-
-    /**
-     * Set this to "true" to compute impaced methods as well. False indicated only
-     * changed methods will be compute.
-     */
-    @Parameter(property = "computeImpactedMethods", defaultValue = TRUE)
-    private boolean computeImpactedMethods;
-
-    public void setComputeImpactedMethods(boolean computeImpactedMethods) {
-        this.computeImpactedMethods = computeImpactedMethods;
-    }
-
-    @Parameter(property = "updateMethodsChecksums", defaultValue = TRUE)
-    private boolean updateMethodsChecksums;
-
-    public void setUpdateMethodsChecksums(boolean updateChecksums) {
-        this.updateMethodsChecksums = updateChecksums;
-    }
 
     private Logger logger;
     private Set<String> changedMethods;
@@ -58,6 +45,24 @@ public class MethodsMojo extends DiffMojo {
     private Map<String, String> methodsCheckSum;
     private Map<String, Set<String>> method2testClasses;
     private ClassLoader loader;
+
+    /**
+     * Set this to "true" to compute impaced methods as well. False indicated only
+     * changed methods will be compute.
+     */
+    @Parameter(property = "computeImpactedMethods", defaultValue = TRUE)
+    private boolean computeImpactedMethods;
+
+    @Parameter(property = "updateMethodsChecksums", defaultValue = TRUE)
+    private boolean updateMethodsChecksums;
+
+    public void setUpdateMethodsChecksums(boolean updateChecksums) {
+        this.updateMethodsChecksums = updateChecksums;
+    }
+
+    public void setComputeImpactedMethods(boolean computeImpactedMethods) {
+        this.computeImpactedMethods = computeImpactedMethods;
+    }
 
     public Set<String> getAffectedMethods() {
         Set<String> affectedMethods = new HashSet<>();
@@ -108,8 +113,8 @@ public class MethodsMojo extends DiffMojo {
             MethodLevelStaticDepsBuilder.buildMethodsGraph();
             methodsCheckSum = MethodLevelStaticDepsBuilder.computeMethodsChecksum(loader);
             method2testClasses = MethodLevelStaticDepsBuilder.computeMethod2testClasses();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
         }
 
         if (computeImpactedMethods) {
