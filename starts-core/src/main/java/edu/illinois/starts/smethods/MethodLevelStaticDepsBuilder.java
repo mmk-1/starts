@@ -1,26 +1,33 @@
 package edu.illinois.starts.smethods;
 
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
-
-import edu.illinois.starts.util.ChecksumUtil;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import edu.illinois.starts.helpers.ZLCHelperMethods;
+import edu.illinois.starts.util.ChecksumUtil;
+import edu.illinois.starts.util.Logger;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 public class MethodLevelStaticDepsBuilder {
     // mvn exec:java -Dexec.mainClass=org.smethods.MethodLevelStaticDepsBuilder
@@ -28,6 +35,7 @@ public class MethodLevelStaticDepsBuilder {
 
     // for every class, get the methods it implements
     public static Map<String, Set<String>> class2ContainedMethodNames = new HashMap<>();
+
     // for every method, get the methods it invokes
     public static Map<String, Set<String>> methodName2MethodNames = new HashMap<>();
 
@@ -44,11 +52,13 @@ public class MethodLevelStaticDepsBuilder {
 
     public static Map<String, Set<String>> method2testClasses = new HashMap<>();
 
-    private static Map<String, String> methodsCheckSum = new HashMap<>();
-
     public static Map<String, Set<String>> methods2testmethods = new HashMap<>();
 
     public static Map<String, String> classesChecksums = new HashMap<>();
+
+    private static Map<String, String> methodsCheckSum = new HashMap<>();
+
+    private static final Logger LOGGER = Logger.getGlobal();
 
     public static void buildMethodsGraph() throws Exception {
 
@@ -62,8 +72,6 @@ public class MethodLevelStaticDepsBuilder {
         // Finding class2ContainedMethodNames, methodName2MethodNames,
         // hierarchy_parents, hierarchy_children
         findMethodsinvoked(classPaths);
-
-
 
         // Suppose that test classes have Test in their class name
         Set<String> testClasses = new HashSet<>();
@@ -93,8 +101,8 @@ public class MethodLevelStaticDepsBuilder {
                 ClassToMethodsCollectorCV classToMethodsVisitor = new ClassToMethodsCollectorCV(
                         class2ContainedMethodNames, hierarchy_parents, hierarchy_children);
                 classReader.accept(classToMethodsVisitor, ClassReader.SKIP_DEBUG);
-            } catch (IOException e) {
-                System.out.println("Cannot parse file: " + classPath);
+            } catch (IOException exception) {
+                LOGGER.log(Level.INFO, "[ERROR] cannot parse file: " + classPath);
                 continue;
             }
         }
@@ -106,8 +114,8 @@ public class MethodLevelStaticDepsBuilder {
                 MethodCallCollectorCV methodClassVisitor = new MethodCallCollectorCV(methodName2MethodNames,
                         hierarchy_parents, hierarchy_children, class2ContainedMethodNames);
                 classReader.accept(methodClassVisitor, ClassReader.SKIP_DEBUG);
-            } catch (IOException e) {
-                System.out.println("Cannot parse file: " + classPath);
+            } catch (IOException exception) {
+                LOGGER.log(Level.INFO, "[ERROR] cannot parse file: " + classPath);
                 continue;
             }
         }
@@ -147,8 +155,8 @@ public class MethodLevelStaticDepsBuilder {
             ClassReader reader = null;
             try {
                 reader = new ClassReader(new FileInputStream(path));
-            } catch (IOException e) {
-                System.out.println("[ERROR] reading class: " + klas);
+            } catch (IOException exception) {
+                LOGGER.log(Level.INFO, "[ERROR] reading class: " + path);
                 continue;
             }
 
@@ -159,8 +167,8 @@ public class MethodLevelStaticDepsBuilder {
                 String methodContent = ZLCHelperMethods.printMethodContent(method);
                 try {
                     methodChecksum = ChecksumUtil.computeMethodChecksum(methodContent);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (IOException exception) {
+                    throw new RuntimeException(exception);
                 }
 
                 methodsCheckSum.put(
@@ -191,16 +199,16 @@ public class MethodLevelStaticDepsBuilder {
     }
 
     public static Map<String, String> computeMethodsChecksum(ClassLoader loader) {
-        for (String class_name : class2ContainedMethodNames.keySet()) {
-            String klas = ChecksumUtil.toClassName(class_name);
+        for (String className : class2ContainedMethodNames.keySet()) {
+            String klas = ChecksumUtil.toClassName(className);
             URL url = loader.getResource(klas);
             String path = url.getPath();
             ClassNode node = new ClassNode(Opcodes.ASM5);
             ClassReader reader = null;
             try {
                 reader = new ClassReader(new FileInputStream(path));
-            } catch (IOException e) {
-                System.out.println("[ERROR] reading class: " + klas);
+            } catch (IOException exception) {
+                LOGGER.log(Level.INFO, "[ERROR] reading class file: " + path);
                 continue;
             }
 
@@ -211,12 +219,12 @@ public class MethodLevelStaticDepsBuilder {
                 String methodContent = ZLCHelperMethods.printMethodContent(method);
                 try {
                     methodChecksum = ChecksumUtil.computeMethodChecksum(methodContent);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                } catch (IOException exception) {
+                    throw new RuntimeException(exception);
                 }
 
                 methodsCheckSum.put(
-                        class_name + "#" + method.name + method.desc.substring(0, method.desc.indexOf(")") + 1),
+                        className + "#" + method.name + method.desc.substring(0, method.desc.indexOf(")") + 1),
                         methodChecksum);
             }
         }
@@ -227,14 +235,14 @@ public class MethodLevelStaticDepsBuilder {
         for (String method : methodDependencyGraph.keySet()) {
             if (!method.contains("Test")) {
                 Set<String> deps = getMethodDeps(method);
-                Set<String> to_remove = new HashSet<>();
+                Set<String> toRemove = new HashSet<>();
 
                 for (String dep : deps) {
                     if (!dep.contains("Test")) {
-                        to_remove.add(dep);
+                        toRemove.add(dep);
                     }
                 }
-                deps.removeAll(to_remove);
+                deps.removeAll(toRemove);
                 methods2testmethods.put(method, deps);
             }
         }
@@ -252,8 +260,9 @@ public class MethodLevelStaticDepsBuilder {
 
     private static void addVariableDepsToDependencyGraph() {
         for (String key : methodDependencyGraph.keySet()) {
-            if (key.endsWith(")"))
+            if (key.endsWith(")")) {
                 continue;
+            }
 
             Set<String> deps = methodDependencyGraph.get(key);
             for (String dep : deps) {
@@ -354,8 +363,8 @@ public class MethodLevelStaticDepsBuilder {
             }
             service.shutdown();
             service.awaitTermination(5, TimeUnit.MINUTES);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
         }
         return test2methods;
     }
@@ -366,10 +375,10 @@ public class MethodLevelStaticDepsBuilder {
         String currentMethodSig = currentMethod.split("#")[1];
         if (!currentMethodSig.startsWith("<init>") && !currentMethodSig.startsWith("<clinit>")) {
             String currentClass = currentMethod.split("#")[0];
-            for (String hClass : hierarchies.getOrDefault(currentClass, new HashSet<>())) {
-                String hMethod = hClass + "#" + currentMethodSig;
-                res.addAll(getMethodsFromHierarchies(hMethod, hierarchies));
-                res.add(hMethod);
+            for (String hyClass : hierarchies.getOrDefault(currentClass, new HashSet<>())) {
+                String hyMethod = hyClass + "#" + currentMethodSig;
+                res.addAll(getMethodsFromHierarchies(hyMethod, hierarchies));
+                res.add(hyMethod);
             }
         }
         return res;

@@ -7,6 +7,8 @@ package edu.illinois.starts.jdeps;
 import java.util.*;
 import java.util.logging.Level;
 
+import edu.illinois.starts.data.ZLCFileContent;
+import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.helpers.Writer;
 import edu.illinois.starts.helpers.ZLCHelperMethods;
 import edu.illinois.starts.maven.AgentLoader;

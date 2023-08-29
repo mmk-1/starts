@@ -100,7 +100,7 @@ public class HybridMojo extends DiffMojo {
 
             if (updateMethodsChecksums) {
 
-                ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,
                         getArtifactsDir(), null, false,
                         zlcFormat);
             }
@@ -114,7 +114,7 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());
             if (updateMethodsChecksums) {
 
-                ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,
                         getArtifactsDir(), null, false,
                         zlcFormat);
             }
@@ -147,7 +147,7 @@ public class HybridMojo extends DiffMojo {
 
             if (updateMethodsChecksums) {
 
-                ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,
                         getArtifactsDir(), null, false,
                         zlcFormat);
             }
@@ -163,7 +163,7 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());
             if (updateMethodsChecksums) {
 
-                ZLCHelperMethods.writeZLCFileH(method2testClasses, methodsCheckSum, classesChecksum, loader,
+                ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,
                         getArtifactsDir(), null, false,
                         zlcFormat);
             }
