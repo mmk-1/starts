@@ -216,7 +216,6 @@ public class MethodsMojo extends DiffMojo {
             logger.log(Level.INFO, "ChangedMethods: " + changedMethods.size());
             logger.log(Level.INFO, "NewMethods: " + newMethods.size());
             logger.log(Level.INFO, "ImpactedMethods: " + impactedMethods.size());
-            logger.log(Level.INFO, "ImpactedMethods: " + impactedMethods);
             logger.log(Level.INFO, "ImpactedTestClasses: " + impactedTestClasses.size());
             logger.log(Level.INFO, "NewClasses: " + newClasses.size());
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());

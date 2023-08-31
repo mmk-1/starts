@@ -342,11 +342,23 @@ public class ZLCHelperMethods implements StartsConstants {
             }
         }
 
-        // Updateing methods checksums
+        Set<String> methods_od_changed_classes = new HashSet<>();
+        
+        for (String c : changedClasses) {
+            for (String m : oldMethodsChecksums.keySet()) {
+                if (m.startsWith(c)) {
+                    methods_od_changed_classes.add(m);
+                }
+            }
+        }
+
+        
+
+        // Updateing methods checksums for non changed classes 
         for (String methodPath : oldMethodsChecksums.keySet()) {
             String newChecksum = methodsChecksums.get(methodPath);
             String oldChecksum = oldMethodsChecksums.get(methodPath);
-            if (newChecksum == null) {
+            if (newChecksum == null && !methods_od_changed_classes.contains(methodPath)) {
                 methodsChecksums.put(methodPath, oldChecksum);
             }
         }
@@ -407,7 +419,9 @@ public class ZLCHelperMethods implements StartsConstants {
                 String newChecksum = methodsChecksums.get(methodPath);
                 oldClasses.add(className);
                 newMethods.remove(methodPath);
-                if (oldCheckSum.equals(newChecksum)) {
+                if (newChecksum == null) {
+                    continue;
+                } else if (oldCheckSum.equals(newChecksum)) {
                     continue;
                 } else {
                     changedMethods.add(methodPath);
