@@ -86,11 +86,33 @@ public class MethodLevelStaticDepsBuilder {
         testClasses2methods = getDepsSingleThread(testClasses);
 
         // Adding reflexive closure to methodName2MethodNames
-        addReflexiveClosure(methodName2MethodNames);
+        addReflexiveClosure(methodName2MethodNames);  
+
+        /* 
+         * A -> B, A
+         */
+
+         /* 
+          * B -> A, B
+          */
+    
         // Inverting methodName2MethodNames to have the dependency graph for each method
         // methodName2MethodNames = invertMap(methodName2MethodNames);
         methodDependencyGraph = invertMap(methodName2MethodNames);
+
         addVariableDepsToDependencyGraph();
+
+        /* 
+         * A_method -> a_variable
+         * a -> A
+         */
+
+        /*
+         * A -> B, A, v
+         * v -> v, A, C
+         * C -> v
+         */
+         
     }
 
     public static void findMethodsinvoked(Set<String> classPaths) {

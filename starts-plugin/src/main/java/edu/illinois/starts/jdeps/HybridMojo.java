@@ -137,6 +137,8 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "NewClasses: " + newClasses.size());
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());
 
+            // (class) ->  checksums 
+            // (class method signature checksum)  -> test classes
             if (updateMethodsChecksums) {
 
                 ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,

@@ -291,6 +291,9 @@ public class ZLCHelperMethods implements StartsConstants {
             return null;
         }
 
+        // changed classes (comparing old and new checksums of classes)
+        // methods checksums for changed classes
+
         Map<String, String> methodsChecksums = MethodLevelStaticDepsBuilder
                 .getMethodsChecksumsForClasses(changedClasses, loader);
 

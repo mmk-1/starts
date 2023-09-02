@@ -111,6 +111,9 @@ public class MethodsMojo extends DiffMojo {
         // Build method level static dependencies
         try {
             MethodLevelStaticDepsBuilder.buildMethodsGraph();
+
+            // Depednecygraph, methodnames2methodnames, testclasses2methodnames
+
             methodsCheckSum = MethodLevelStaticDepsBuilder.computeMethodsChecksum(loader);
             method2testClasses = MethodLevelStaticDepsBuilder.computeMethod2testClasses();
         } catch (Exception exception) {
@@ -141,6 +144,7 @@ public class MethodsMojo extends DiffMojo {
             logger.log(Level.INFO, "NewClasses: " + newClasses.size());
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());
             logger.log(Level.INFO, "ChangedClasses: " + changedClasses.size());
+            // (class - method signature - checksum) -> test classes
             if (updateMethodsChecksums) {
                 ZLCHelperMethods.writeZLCFile(method2testClasses, methodsCheckSum, loader, getArtifactsDir(), null,
                         false,
@@ -165,7 +169,7 @@ public class MethodsMojo extends DiffMojo {
 
     protected void setChangedMethods() throws MojoExecutionException {
         List<Set<String>> data = ZLCHelperMethods.getChangedDataMethods(getArtifactsDir(), cleanBytes, methodsCheckSum,
-                METHODS_TEST_DEPS_ZLC_FILE);
+                METHODS_TEST_DEPS_ZLC_FILE); // changedMethod, newMethods, impactedTestClasses(only for changed method), oldClasses, changedClasses 
         changedMethods = data == null ? new HashSet<String>() : data.get(0);
         newMethods = data == null ? new HashSet<String>() : data.get(1);
 
@@ -173,6 +177,7 @@ public class MethodsMojo extends DiffMojo {
         for (String newMethod : newMethods) {
             impactedTestClasses.addAll(method2testClasses.getOrDefault(newMethod, new HashSet<>()));
         }
+
 
         oldClasses = data == null ? new HashSet<String>() : data.get(3);
         changedClasses = data == null ? new HashSet<String>() : data.get(4);
@@ -239,9 +244,10 @@ public class MethodsMojo extends DiffMojo {
         impactedMethods = new HashSet<>();
         impactedMethods.addAll(findImpactedMethods(changedMethods));
         impactedMethods.addAll(findImpactedMethods(newMethods));
-        for (String impactedMethod : impactedMethods) {
-            impactedTestClasses.addAll(method2testClasses.getOrDefault(impactedMethod, new HashSet<String>()));
-        }
+        
+        // for (String impactedMethod : impactedMethods) {
+        //     impactedTestClasses.addAll(method2testClasses.getOrDefault(impactedMethod, new HashSet<String>()));
+        // }
     }
 
     private Set<String> findImpactedMethods(Set<String> affectedMethods) {
