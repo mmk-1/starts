@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import edu.illinois.starts.constants.StartsConstants;
 import edu.illinois.starts.data.ZLCFormat;
 import edu.illinois.starts.enums.DependencyFormat;
+import edu.illinois.starts.enums.TransitiveClosureOptions;
 import edu.illinois.starts.helpers.EkstaziHelper;
 import edu.illinois.starts.helpers.RTSUtil;
 import edu.illinois.starts.helpers.Writer;
@@ -56,7 +57,7 @@ public class DiffMojo extends BaseMojo implements StartsConstants {
      * is useful for "dry runs" where one may want to see the diff without updating
      * the test dependencies.
      */
-    @Parameter(property = "updateDiffChecksums", defaultValue = FALSE)
+    @Parameter(property = "updateDiffChecksums", defaultValue = TRUE)
     private boolean updateDiffChecksums;
 
     public void execute() throws MojoExecutionException {
@@ -109,7 +110,8 @@ public class DiffMojo extends BaseMojo implements StartsConstants {
             ClassLoader loader = createClassLoader(sfClassPath);
             //TODO: set this boolean to true only for static reflectionAnalyses with * (border, string, naive)?
             boolean computeUnreached = true;
-            Result result = prepareForNextRun(sfPathString, sfClassPath, allTests, nonAffected, computeUnreached);
+            Result result = prepareForNextRun(sfPathString, sfClassPath, allTests, nonAffected,
+                    computeUnreached, TransitiveClosureOptions.PS3);
             Map<String, Set<String>> testDeps = result.getTestDeps();
             graph = result.getGraph();
             Set<String> unreached = computeUnreached ? result.getUnreachedDeps() : new HashSet<String>();

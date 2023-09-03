@@ -10,8 +10,6 @@ import java.io.File;
  * Some constants used throughout the STARTS codebase.
  */
 public interface StartsConstants {
-    String STARTS_DIRECTORY_PATH = ".starts" + File.separator;
-
     String SUREFIRE_PLUGIN_VM = "org/apache/maven/plugin/surefire/SurefirePlugin";
     String SUREFIRE_PLUGIN_BIN = "org.apache.maven.plugin.surefire.SurefirePlugin";
 
@@ -62,5 +60,11 @@ public interface StartsConstants {
 
     String JAR_EXTENSION = ".jar";
     String CLASS_EXTENSION = ".class";
+    String JAVA_EXTENSION = ".java";
+
+    String TARGET = "target";
+    String METHODS_TEST_DEPS_ZLC_FILE = "method-deps.zlc";
+    String METHODS_TEST_DEPS_ZLC_FILE_TM = "method-deps-tm.zlc";
+    String CLASSES_ZLC_FILE = "classes-checksums.zlc";
 
 }

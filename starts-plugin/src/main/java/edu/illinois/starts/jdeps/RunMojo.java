@@ -75,11 +75,14 @@ public class RunMojo extends DiffMojo implements StartsConstants {
     private Logger logger;
 
     public void execute() throws MojoExecutionException {
+        // Logging 
         Logger.getGlobal().setLoggingLevel(Level.parse(loggingLevel));
         logger = Logger.getGlobal();
         long start = System.currentTimeMillis();
-        setIncludesExcludes();
+        setIncludesExcludes(); 
+        
         run();
+        
         Set<String> allTests = new HashSet<>(getTestClasses(CHECK_IF_ALL_AFFECTED));
         if (writeNonAffected || logger.getLoggingLevel().intValue() <= Level.FINEST.intValue()) {
             Writer.writeToFile(nonAffectedTests, "non-affected-tests", getArtifactsDir());
@@ -94,14 +97,17 @@ public class RunMojo extends DiffMojo implements StartsConstants {
     }
 
     protected void run() throws MojoExecutionException {
+        
         String cpString = Writer.pathToString(getSureFireClassPath().getClassPath());
-        List<String> sfPathElements = getCleanClassPath(cpString);
+        List<String> sfPathElements = getCleanClassPath(cpString); // Getting clean list of class pathes 
+
         if (!isSameClassPath(sfPathElements) || !hasSameJarChecksum(sfPathElements)) {
             // Force retestAll because classpath changed since last run
             // don't compute changed and non-affected classes
             dynamicallyUpdateExcludes(new ArrayList<String>());
             // Make nonAffected empty so dependencies can be updated
             nonAffectedTests = new HashSet<>();
+            
             Writer.writeClassPath(cpString, artifactsDir);
             Writer.writeJarChecksums(sfPathElements, artifactsDir, jarCheckSums);
         } else if (retestAll) {
@@ -208,5 +214,5 @@ public class RunMojo extends DiffMojo implements StartsConstants {
             cpPaths.add(paths[i]);
         }
         return cpPaths;
-    }
+    }     
 }
