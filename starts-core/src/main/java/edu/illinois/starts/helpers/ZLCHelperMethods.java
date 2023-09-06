@@ -357,7 +357,7 @@ public class ZLCHelperMethods implements StartsConstants {
 
         
 
-        // Updateing methods checksums for non changed classes 
+        // Updating methods checksums for non changed classes 
         for (String methodPath : oldMethodsChecksums.keySet()) {
             String newChecksum = methodsChecksums.get(methodPath);
             String oldChecksum = oldMethodsChecksums.get(methodPath);

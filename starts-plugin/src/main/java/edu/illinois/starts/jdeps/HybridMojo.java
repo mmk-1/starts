@@ -188,6 +188,9 @@ public class HybridMojo extends DiffMojo {
             logger.log(Level.INFO, "NewClasses: " + newClasses.size());
             logger.log(Level.INFO, "OldClasses: " + oldClasses.size());
 
+
+            // (class) ->  checksums 
+            // (class method-signature checksum)  -> test classes
             if (updateMethodsChecksums) {
 
                 ZLCHelperMethods.writeZLCFileHybrid(method2testClasses, methodsCheckSum, classesChecksum, loader,
@@ -219,6 +222,8 @@ public class HybridMojo extends DiffMojo {
         changedMethods = data == null ? new HashSet<String>() : data.get(0);
         newMethods = data == null ? new HashSet<String>() : data.get(1);
         impactedTestClasses = data == null ? new HashSet<String>() : data.get(2);
+        
+        // New methods meta data is not stored. We need to find their impactedTestClasses
         for (String newMethod : newMethods) {
             impactedTestClasses.addAll(method2testClasses.getOrDefault(newMethod, new HashSet<>()));
         }
