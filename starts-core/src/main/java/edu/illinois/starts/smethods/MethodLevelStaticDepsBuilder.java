@@ -224,7 +224,7 @@ public class MethodLevelStaticDepsBuilder {
             for (MethodNode method : methods) {
                 String methodContent = ZLCHelperMethods.printMethodContent(method);
                 try {
-                    methodChecksum = ChecksumUtil.computeMethodChecksum(methodContent);
+                    methodChecksum = ChecksumUtil.computeChecksum(methodContent);
                 } catch (IOException exception) {
                     throw new RuntimeException(exception);
                 }
@@ -294,7 +294,7 @@ public class MethodLevelStaticDepsBuilder {
             for (MethodNode method : methods) {
                 String methodContent = ZLCHelperMethods.printMethodContent(method);
                 try {
-                    methodChecksum = ChecksumUtil.computeMethodChecksum(methodContent);
+                    methodChecksum = ChecksumUtil.computeChecksum(methodContent);
                 } catch (IOException exception) {
                     throw new RuntimeException(exception);
                 }

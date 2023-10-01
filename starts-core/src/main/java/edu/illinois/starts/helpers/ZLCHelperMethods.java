@@ -26,9 +26,11 @@ import edu.illinois.starts.util.Logger;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.util.Printer;
 import org.objectweb.asm.util.Textifier;
+import org.objectweb.asm.util.TraceClassVisitor;
 import org.objectweb.asm.util.TraceMethodVisitor;
 
 /**
@@ -118,6 +120,10 @@ public class ZLCHelperMethods implements StartsConstants {
         for (String className : oldClassChecksums.keySet()) {
             String oldCheckSum = oldClassChecksums.get(className);
             String newChecksum = newClassesChecksums.get(className);
+
+            // Check if file deleted or not
+            // Otherwise check if checksum is equal or not
+            // If not equal compare header checksums
             oldClasses.add(className);
             if (oldCheckSum.equals(newChecksum)) {
                 continue;
@@ -206,6 +212,29 @@ public class ZLCHelperMethods implements StartsConstants {
         String methodContent = node.access + "\n" + node.signature + "\n" + node.name + "\n" + node.desc + "\n"
                 + sw.toString();
         return methodContent;
+    }
+
+    // print class header info (e.g., access flags, inner classes, etc)
+    public static String printClassHeader(ClassNode node) {
+        Printer printer = new Textifier(Opcodes.ASM5) {
+            @Override
+            public Textifier visitField(int access, String name, String desc,
+                    String signature, Object value) {
+                return new Textifier();
+            }
+
+            @Override
+            public Textifier visitMethod(int access, String name, String desc,
+                    String signature, String[] exceptions) {
+                return new Textifier();
+            }
+        };
+        StringWriter sw = new StringWriter();
+        TraceClassVisitor classPrinter = new TraceClassVisitor(null, printer,
+                new PrintWriter(sw));
+        node.accept(classPrinter);
+
+        return sw.toString();
     }
 
     /**
